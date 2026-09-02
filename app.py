@@ -110,10 +110,21 @@ cg_summary = summarize(problem, cg_result.patterns, cg_result.pattern_counts)
 st.markdown("## 🎯 Ergebnis im Vergleich")
 m1, m2, m3, m4 = st.columns(4)
 m1.metric("FFD-Heuristik", f"{ffd_summary.total_rolls} Rollen", delta=f"{ffd_summary.waste_pct:.1f} % Verschnitt", delta_color="off")
-m2.metric("Column Generation", f"{cg_summary.total_rolls} Rollen", delta=f"{cg_summary.waste_pct:.1f} % Verschnitt", delta_color="off")
+m2.metric(
+    "Column Generation", f"{cg_summary.total_rolls} Rollen", delta=f"{cg_summary.waste_pct:.1f} % Verschnitt", delta_color="off",
+    help="Verschnitt = ungenutzte Rollenreste + überzählig geschnittene Stücke (Column Generation deckt Bedarf "
+         "mit ≥ statt =, kann also vereinzelt mehr als bestellt schneiden - das zählt hier bewusst als "
+         "Verschnitt, sonst wäre der Vergleich mit FFD nicht fair).",
+)
 saved = ffd_summary.total_rolls - cg_summary.total_rolls
 m3.metric("Gesparte Rollen", f"{saved}", delta=f"{100 * saved / ffd_summary.total_rolls:.1f} %" if ffd_summary.total_rolls else None)
 m4.metric("LP-Schranke (Beweis)", f"{cg_result.lp_relaxation_rolls:.2f} Rollen", help="Mathematisch bewiesenes Minimum, das keine Lösung unterschreiten kann - egal welches Verfahren.")
+
+if cg_summary.overproduction_length > 1e-6:
+    st.caption(
+        f"↪️ Davon {cg_summary.overproduction_length:.2f} m bei Column Generation überzählig geschnitten "
+        f"(mehr als bestellt) - eine Nebenwirkung der Rundung von der LP-Lösung auf ganze Rollen."
+    )
 
 if saved == 0:
     st.info(
@@ -157,7 +168,10 @@ sucht. Die Lösung liefert **Dualwerte** - im Grunde einen "Wert pro Meter" für
 Ein kleines Rucksack-Teilproblem sucht darauf aufbauend das eine neue Muster, das diese Werte am
 besten ausnutzt. Ist so ein Muster wertvoller als eine neue Rolle kostet, wird es ergänzt und die
 LP erneut gelöst - so lange, bis kein Muster mehr eine Verbesserung bringt. Das fertige
-LP-Ergebnis wird anschließend auf eine ganzzahlige Lösung gerundet.
+LP-Ergebnis wird anschließend auf eine ganzzahlige Lösung gerundet. Da das Modell Bedarf mit
+≥ statt = deckt, kann diese Rundung vereinzelt mehr Stücke eines Typs erzeugen als bestellt -
+dieser Überschuss zählt in der Verschnitt-Kennzahl oben bewusst mit, sonst wäre der Vergleich
+mit FFD (die nie mehr als bestellt schneidet) nicht fair.
 """
     )
 

@@ -44,6 +44,13 @@ def generate_cutting_report_pdf(problem, orders, ffd_patterns, ffd_counts, ffd_s
         f"Column Generation: {cg_summary.total_rolls} Rollen ({cg_summary.waste_pct:.1f} % Verschnitt)",
         new_x=XPos.LMARGIN, new_y=YPos.NEXT,
     )
+    if cg_summary.overproduction_length > 1e-6:
+        pdf.cell(
+            0, 6,
+            f"Davon {cg_summary.overproduction_length:.2f} m überzählig geschnitten (mehr als bestellt, "
+            f"Nebenwirkung der Rundung von der LP-Lösung auf ganze Rollen)",
+            new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+        )
     pdf.cell(
         0, 6,
         f"LP-Schranke (Beweis): {cg_result.lp_relaxation_rolls:.2f} Rollen, "
