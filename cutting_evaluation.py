@@ -10,6 +10,7 @@ from cutting_model import CuttingProblem
 @dataclass
 class SolutionSummary:
     total_rolls: int
+    total_cost: float  # sum of the cost of every roll actually bought - the real objective
     cut_length: float  # total length actually cut across all patterns - can exceed demand_length
     demand_length: float  # true ordered length, sum(length_i * demand_i) - identical for any valid solution
     overproduction_length: float  # cut_length beyond demand_length: pieces cut but never ordered
@@ -18,7 +19,7 @@ class SolutionSummary:
     waste_pct: float
 
 
-def summarize(problem: CuttingProblem, patterns: np.ndarray, counts: np.ndarray) -> SolutionSummary:
+def summarize(problem: CuttingProblem, patterns: np.ndarray, stock_idx: np.ndarray, counts: np.ndarray) -> SolutionSummary:
     """FFD only ever cuts exactly the ordered piece counts, but column
     generation's master problem is a covering LP (>= demand, not = demand)
     and its rounding step can round certain patterns up past what was
@@ -27,15 +28,19 @@ def summarize(problem: CuttingProblem, patterns: np.ndarray, counts: np.ndarray)
     waste_pct comparable - counting it as "used" would understate CG's true
     material cost relative to FFD, which never overproduces."""
     total_rolls = int(counts.sum())
+    stock_lengths = np.array([problem.stock_types[k].length for k in stock_idx])
+    stock_costs = np.array([problem.stock_types[k].cost for k in stock_idx])
+    total_cost = float(np.dot(counts, stock_costs))
+    total_stock_length = float(np.dot(counts, stock_lengths))
     cut_length = float(sum(c * np.dot(pat, problem.lengths) for pat, c in zip(patterns, counts)))
     demand_length = float(np.dot(problem.demand, problem.lengths))
     overproduction_length = max(0.0, cut_length - demand_length)
-    total_stock = total_rolls * problem.roll_length
-    trim_length = max(0.0, total_stock - cut_length)
+    trim_length = max(0.0, total_stock_length - cut_length)
     waste_length = trim_length + overproduction_length
-    waste_pct = 100.0 * waste_length / total_stock if total_stock > 0 else 0.0
+    waste_pct = 100.0 * waste_length / total_stock_length if total_stock_length > 0 else 0.0
     return SolutionSummary(
         total_rolls=total_rolls,
+        total_cost=total_cost,
         cut_length=cut_length,
         demand_length=demand_length,
         overproduction_length=overproduction_length,

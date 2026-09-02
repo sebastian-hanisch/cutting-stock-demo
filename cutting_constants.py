@@ -1,15 +1,21 @@
 """Sample data and presets for the cutting-stock demo."""
 
-# Standard stock length in meters (e.g. a steel bar, cable drum, paper roll).
-DEFAULT_ROLL_LENGTH = 20.0
+from cutting_model import StockType
 
-# Defaults for the random order-book generator.
+# Standard stock catalog: several available roll lengths at different costs
+# (e.g. steel bar, cable drum, paper roll stock) - longer rolls cost less per
+# meter (economies of scale), but only pay off if a pattern can actually use
+# the extra length.
+DEFAULT_STOCK_TYPES = (
+    StockType("Kurz (12 m)", 12.0, 8.5),
+    StockType("Standard (20 m)", 20.0, 14.0),
+    StockType("Lang (30 m)", 30.0, 20.0),
+)
+
 DEFAULT_SEED = 42
 DEFAULT_N_TYPES = 4
 
 # A representative order book: (label, piece length in meters, demand in pieces).
-# Verified to give column generation a real, if modest, edge over FFD:
-# 15 vs. 16 rolls (see tests/test_solver.py for the CG<=FFD check).
 DEFAULT_ORDERS = [
     ("A", 13.0, 10),
     ("B", 7.0, 10),
@@ -17,21 +23,36 @@ DEFAULT_ORDERS = [
     ("D", 4.0, 10),
 ]
 
-# Presets swap in a different order book to show the effect on the CG/FFD gap.
+# Presets swap in a different stock catalog and/or order book.
 PRESETS = {
     "Standard-Sortiment": {
-        "roll_length": 20.0,
+        "stock_types": DEFAULT_STOCK_TYPES,
         "orders": DEFAULT_ORDERS,
     },
     "Wenige, lange Stücke": {
-        "roll_length": 20.0,
-        "orders": [("A", 11.0, 10), ("B", 9.0, 10), ("C", 6.5, 10)],
+        "stock_types": DEFAULT_STOCK_TYPES,
+        "orders": [("A", 25.0, 6), ("B", 14.0, 8), ("C", 9.0, 10)],
     },
     "Viele, kurze Stücke": {
-        "roll_length": 20.0,
+        "stock_types": DEFAULT_STOCK_TYPES,
         "orders": [
             ("A", 3.2, 20), ("B", 2.8, 24), ("C", 2.3, 28),
             ("D", 1.9, 30), ("E", 1.5, 34), ("F", 1.1, 36),
+        ],
+    },
+    "Worst Case für FFD": {
+        # Every single piece (~5 m) comfortably fits the cheapest stock type
+        # (Kurz, 12 m) alone, so FFD's "cheapest that fits" rule pairs two
+        # same-type pieces per Kurz roll and never looks further - it has no
+        # way to notice that one of each of the six types sums to exactly
+        # 30 m, a perfect zero-waste fit for a single (pricier per roll, but
+        # much cheaper per meter) Lang roll. Column generation's pricing
+        # step finds that combined pattern immediately: ~22 % cheaper, and
+        # provably optimal (LP bound == integer solution).
+        "stock_types": DEFAULT_STOCK_TYPES,
+        "orders": [
+            ("A", 5.2, 12), ("B", 5.1, 12), ("C", 5.0, 12),
+            ("D", 4.95, 12), ("E", 4.9, 12), ("F", 4.85, 12),
         ],
     },
 }
