@@ -1,0 +1,165 @@
+"""
+Zuschnittoptimierung (Cutting Stock Problem) - interaktive Demo
+Sebastian Hanisch - Operations Research und Machine Learning
+
+Rollen/Stangen fester Länge (Stahl, Kabel, Papier) sollen in bestellte
+Zuschnittlängen zerlegt werden, mit möglichst wenig Rollen und möglichst
+wenig Verschnitt. Diese Demo vergleicht zwei Lösungswege:
+
+- First-Fit-Decreasing (FFD): eine schnelle, naive Greedy-Heuristik.
+- Column Generation: löst iterativ die LP-Relaxierung eines "wähle die
+  guenstigste Mischung aus Schnittmustern"-Modells, ohne je alle möglichen
+  Muster aufzählen zu müssen (bei realistischen Bestellungen praktisch
+  unzählbar viele) - die Dualwerte der LP-Lösung steuern ein kleines
+  Rucksack-Teilproblem, das jeweils genau das eine wertvollste neue Muster
+  liefert. Die LP-Relaxierung liefert außerdem eine mathematisch bewiesene
+  untere Schranke: eine Garantie, wie nah jede Lösung höchstens am Optimum
+  liegen kann - etwas, das eine reine Heuristik nie liefern kann.
+
+Code-Struktur wie bei den anderen Demos in diesem Workspace: Modell, Solver
+und Visualisierung liegen in eigenen cutting_*.py-Modulen neben dieser Datei.
+"""
+
+import pandas as pd
+import streamlit as st
+
+from cutting_constants import PRESETS
+from cutting_evaluation import summarize
+from cutting_model import build_problem
+from cutting_solver import column_generation, ffd_heuristic
+from cutting_visualization import pattern_figure
+
+st.set_page_config(page_title="Zuschnittoptimierung - Sebastian Hanisch", layout="wide")
+
+st.title("📏 Zuschnittoptimierung (Cutting Stock)")
+st.markdown(
+    """
+Interaktive Demo zum **Cutting Stock Problem**: Rollen/Stangen fester Länge werden in bestellte
+Zuschnittlängen zerlegt - mit möglichst wenig Rollen. Verglichen werden eine naive Greedy-Heuristik
+(**First-Fit-Decreasing**) und **Column Generation**, die iterativ genau die wertvollsten Schnittmuster
+findet, ohne je alle möglichen Muster aufzählen zu müssen. Hintergrund im Expander "Wie funktioniert
+diese Demo?" unten sowie formal hergeleitet im Expander "📐 Mathematische Formulierung".
+"""
+)
+
+if "orders_df" not in st.session_state:
+    st.session_state.orders_df = pd.DataFrame(PRESETS["Standard-Sortiment"]["orders"], columns=["Label", "Länge (m)", "Bedarf (Stück)"])
+    st.session_state.roll_length = PRESETS["Standard-Sortiment"]["roll_length"]
+
+st.caption("🎯 Schnellstart – ein Beispielszenario laden:")
+preset_cols = st.columns(len(PRESETS))
+for col, (name, cfg) in zip(preset_cols, PRESETS.items()):
+    with col:
+        if st.button(name, use_container_width=True):
+            st.session_state.orders_df = pd.DataFrame(cfg["orders"], columns=["Label", "Länge (m)", "Bedarf (Stück)"])
+            st.session_state.roll_length = cfg["roll_length"]
+            st.rerun()
+
+with st.sidebar:
+    st.header("⚙️ Einstellungen")
+    roll_length = st.slider("Rollenlänge (m)", 5.0, 40.0, float(st.session_state.roll_length), step=0.5)
+    st.markdown("**Bestellungen**")
+    orders_df = st.data_editor(
+        st.session_state.orders_df, num_rows="dynamic", use_container_width=True,
+        column_config={
+            "Länge (m)": st.column_config.NumberColumn(min_value=0.1, max_value=roll_length, step=0.1),
+            "Bedarf (Stück)": st.column_config.NumberColumn(min_value=1, step=1),
+        },
+    )
+
+orders = [
+    (str(row["Label"]), float(row["Länge (m)"]), int(row["Bedarf (Stück)"]))
+    for _, row in orders_df.dropna().iterrows()
+    if float(row["Länge (m)"]) <= roll_length
+]
+
+if not orders:
+    st.warning("Mindestens eine gültige Bestellung mit Länge ≤ Rollenlänge wird benötigt.")
+    st.stop()
+
+problem = build_problem(orders, roll_length=roll_length)
+
+with st.spinner("Löse..."):
+    ffd_patterns, ffd_counts = ffd_heuristic(problem)
+    cg_result = column_generation(problem)
+
+ffd_summary = summarize(problem, ffd_patterns, ffd_counts)
+cg_summary = summarize(problem, cg_result.patterns, cg_result.pattern_counts)
+
+st.markdown("## 🎯 Ergebnis im Vergleich")
+m1, m2, m3, m4 = st.columns(4)
+m1.metric("FFD-Heuristik", f"{ffd_summary.total_rolls} Rollen", delta=f"{ffd_summary.waste_pct:.1f} % Verschnitt", delta_color="off")
+m2.metric("Column Generation", f"{cg_summary.total_rolls} Rollen", delta=f"{cg_summary.waste_pct:.1f} % Verschnitt", delta_color="off")
+saved = ffd_summary.total_rolls - cg_summary.total_rolls
+m3.metric("Gesparte Rollen", f"{saved}", delta=f"{100 * saved / ffd_summary.total_rolls:.1f} %" if ffd_summary.total_rolls else None)
+m4.metric("LP-Schranke (Beweis)", f"{cg_result.lp_relaxation_rolls:.2f} Rollen", help="Mathematisch bewiesenes Minimum, das keine Lösung unterschreiten kann - egal welches Verfahren.")
+
+if saved == 0:
+    st.info(
+        "In diesem Szenario erreicht die einfache FFD-Heuristik zufällig bereits dieselbe Rollenzahl wie Column "
+        "Generation. Das kommt bei Cutting-Stock-Problemen häufiger vor, als man denkt - FFD ist überraschend "
+        "stark. Der Unterschied: Nur Column Generation liefert mit der LP-Schranke auch den **Beweis**, dass "
+        "keine Lösung besser sein kann. Probieren Sie ein anderes Szenario oder eigene Bestellungen aus, um "
+        "einen Fall zu sehen, in dem FFD tatsächlich mehr Rollen braucht."
+    )
+
+tab_cg, tab_ffd = st.tabs(["Column Generation", "FFD-Heuristik"])
+with tab_cg:
+    st.plotly_chart(pattern_figure(problem, cg_result.patterns, cg_result.pattern_counts, "Schnittmuster (Column Generation)"), use_container_width=True)
+with tab_ffd:
+    st.plotly_chart(pattern_figure(problem, ffd_patterns, ffd_counts, "Schnittmuster (FFD)"), use_container_width=True)
+
+with st.expander("❓ Wie funktioniert diese Demo?"):
+    st.markdown(
+        """
+**Das Problem:** Aus Rollen fester Länge sollen die bestellten Stückzahlen jeder Zuschnittlänge
+herausgeschnitten werden - mit möglichst wenigen Rollen. Ein *Schnittmuster* legt fest, wie viele
+Stücke welcher Länge aus einer einzelnen Rolle geschnitten werden.
+
+**Warum nicht einfach alle Muster durchprobieren?** Schon bei wenigen Bestelltypen gibt es
+astronomisch viele gültige Muster (jede Kombination, die in eine Rolle passt). Für reale
+Bestelllisten ist Enumeration unmöglich.
+
+**First-Fit-Decreasing (FFD):** Sortiert alle benötigten Einzelstücke absteigend nach Länge und
+legt jedes Stück in die erste Rolle, in der noch Platz ist - sonst wird eine neue Rolle begonnen.
+Schnell, aber ohne jede Garantie, wie weit das Ergebnis vom Optimum entfernt ist.
+
+**Column Generation:** Startet mit einer Handvoll einfacher Muster (je ein Muster pro Bestelltyp)
+und löst die *LP-Relaxierung* eines Optimierungsmodells, das die güntigste Mischung aus Mustern
+sucht. Die Lösung liefert **Dualwerte** - im Grunde einen "Wert pro Meter" für jeden Bestelltyp.
+Ein kleines Rucksack-Teilproblem sucht darauf aufbauend das eine neue Muster, das diese Werte am
+besten ausnutzt. Ist so ein Muster wertvoller als eine neue Rolle kostet, wird es ergänzt und die
+LP erneut gelöst - so lange, bis kein Muster mehr eine Verbesserung bringt. Das fertige
+LP-Ergebnis wird anschließend auf eine ganzzahlige Lösung gerundet.
+"""
+    )
+
+with st.expander("📐 Mathematische Formulierung"):
+    st.markdown(
+        r"""
+**Master-Problem** (Muster $j$ mit Stückzahlvektor $a_j$, Einsatzhäufigkeit $x_j \geq 0$):
+
+$$\min \sum_j x_j \quad \text{s.t.} \quad \sum_j a_{ij}\, x_j \geq d_i \ \ \forall i, \quad x_j \geq 0$$
+
+Die LP-Relaxierung (reelle statt ganzzahlige $x_j$) liefert die Dualwerte $y_i \geq 0$ für jede
+Bestellzeile - ökonomisch: "wie viel eine zusätzliche Einheit Bedarf $i$ die Gesamtlösung
+verteuern würde".
+
+**Pricing-Teilproblem** (Rucksackproblem: welches neue Muster lohnt sich?):
+
+$$\max \sum_i y_i\, a_i \quad \text{s.t.} \quad \sum_i \ell_i\, a_i \leq L, \quad a_i \in \mathbb{Z}_{\geq 0}$$
+
+mit Stücklänge $\ell_i$ und Rollenlänge $L$. Ein Muster mit reduzierten Kosten
+$1 - \sum_i y_i a_i < 0$ verbessert die Lösung und wird ergänzt; ist kein solches Muster mehr zu
+finden, ist die LP-Relaxierung bewiesen optimal.
+
+**Rundung:** Aus der optimalen fraktionalen Lösung werden die vollen Rollen je Muster
+(abgerundet) übernommen; der kleine Rest wird mit FFD aufgefüllt - ein Standardverfahren, das
+garantiert zulässig bleibt, ohne vollständiges Branch-and-Price zu benötigen.
+"""
+    )
+
+st.caption(
+    f"Column Generation brauchte {cg_result.iterations} Iterationen, um {len(cg_result.patterns)} "
+    f"Schnittmuster zu finden (statt aller theoretisch möglichen Muster)."
+)
