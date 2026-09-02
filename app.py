@@ -20,12 +20,19 @@ Code-Struktur wie bei den anderen Demos in diesem Workspace: Modell, Solver
 und Visualisierung liegen in eigenen cutting_*.py-Modulen neben dieser Datei.
 """
 
-import pandas as pd
 import streamlit as st
 
 from cutting_constants import PRESETS
 from cutting_evaluation import summarize
 from cutting_model import build_problem
+from cutting_pdf_export import generate_cutting_report_pdf
+from cutting_presets import (
+    apply_preset,
+    bounds,
+    init_session_state_defaults,
+    load_permalink_settings,
+    sync_query_params,
+)
 from cutting_solver import column_generation, ffd_heuristic
 from cutting_visualization import pattern_figure
 
@@ -42,22 +49,23 @@ diese Demo?" unten sowie formal hergeleitet im Expander "📐 Mathematische Form
 """
 )
 
-if "orders_df" not in st.session_state:
-    st.session_state.orders_df = pd.DataFrame(PRESETS["Standard-Sortiment"]["orders"], columns=["Label", "Länge (m)", "Bedarf (Stück)"])
-    st.session_state.roll_length = PRESETS["Standard-Sortiment"]["roll_length"]
-
 st.caption("🎯 Schnellstart – ein Beispielszenario laden:")
 preset_cols = st.columns(len(PRESETS))
-for col, (name, cfg) in zip(preset_cols, PRESETS.items()):
+for col, name in zip(preset_cols, PRESETS):
     with col:
-        if st.button(name, use_container_width=True):
-            st.session_state.orders_df = pd.DataFrame(cfg["orders"], columns=["Label", "Länge (m)", "Bedarf (Stück)"])
-            st.session_state.roll_length = cfg["roll_length"]
-            st.rerun()
+        st.button(name, use_container_width=True, on_click=apply_preset, args=(name,))
+
+st.caption(
+    "🔗 Die Adresszeile oben spiegelt Ihre aktuelle Konfiguration wider – einfach kopieren, "
+    "um ein Szenario zu teilen."
+)
+
+load_permalink_settings()
+init_session_state_defaults()
 
 with st.sidebar:
     st.header("⚙️ Einstellungen")
-    roll_length = st.slider("Rollenlänge (m)", 5.0, 40.0, float(st.session_state.roll_length), step=0.5)
+    roll_length = st.slider("Rollenlänge (m)", *bounds("roll_length_slider"), step=0.5, key="roll_length_slider")
     st.markdown("**Bestellungen**")
     orders_df = st.data_editor(
         st.session_state.orders_df, num_rows="dynamic", use_container_width=True,
@@ -76,6 +84,8 @@ orders = [
 if not orders:
     st.warning("Mindestens eine gültige Bestellung mit Länge ≤ Rollenlänge wird benötigt.")
     st.stop()
+
+sync_query_params(orders, roll_length)
 
 problem = build_problem(orders, roll_length=roll_length)
 
@@ -102,6 +112,12 @@ if saved == 0:
         "keine Lösung besser sein kann. Probieren Sie ein anderes Szenario oder eigene Bestellungen aus, um "
         "einen Fall zu sehen, in dem FFD tatsächlich mehr Rollen braucht."
     )
+
+pdf_bytes = generate_cutting_report_pdf(problem, orders, ffd_patterns, ffd_counts, ffd_summary, cg_result, cg_summary)
+st.download_button(
+    "📄 Vergleichsbericht als PDF herunterladen", data=pdf_bytes,
+    file_name="zuschnittoptimierung.pdf", mime="application/pdf",
+)
 
 tab_cg, tab_ffd = st.tabs(["Column Generation", "FFD-Heuristik"])
 with tab_cg:
