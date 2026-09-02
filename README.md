@@ -2,6 +2,8 @@
 
 Interaktive Demo zum Cutting-Stock-Problem mit mehreren Rollentypen: Ein Lieferant führt mehrere Standard-Rollenlängen (Stahl, Kabel, Papier) zu unterschiedlichen Kosten, aus denen bestellte Zuschnittlängen zerlegt werden sollen — mit möglichst geringen Gesamtkosten.
 
+**[→ Demo live ausprobieren](https://sebastianhanisch-cutting-stock-demo.streamlit.app/)**
+
 ## Worum geht's?
 
 Die einzige klassische OR-Technik im Portfolio, die bisher fehlte: **Column Generation**. Statt alle möglichen (Rollentyp, Schnittmuster)-Kombinationen aufzuzählen (schon bei wenigen Bestelltypen praktisch unzählbar viele), startet das Verfahren mit ein paar trivialen Mustern, löst die LP-Relaxierung eines "günstigste Mustermischung"-Modells und nutzt deren Dualwerte, um über je ein kleines Rucksack-Teilproblem pro Rollentyp gezielt genau die eine wertvollste neue Kombination zu finden — bis keine mehr eine Verbesserung bringt.
