@@ -3,6 +3,10 @@
 # Standard stock length in meters (e.g. a steel bar, cable drum, paper roll).
 DEFAULT_ROLL_LENGTH = 20.0
 
+# Defaults for the random order-book generator.
+DEFAULT_SEED = 42
+DEFAULT_N_TYPES = 4
+
 # A representative order book: (label, piece length in meters, demand in pieces).
 # Verified to give column generation a real, if modest, edge over FFD:
 # 15 vs. 16 rolls (see tests/test_solver.py for the CG<=FFD check).

@@ -31,6 +31,7 @@ from cutting_presets import (
     bounds,
     init_session_state_defaults,
     load_permalink_settings,
+    randomize_orders,
     sync_query_params,
 )
 from cutting_solver import column_generation, ffd_heuristic
@@ -66,6 +67,16 @@ init_session_state_defaults()
 with st.sidebar:
     st.header("⚙️ Einstellungen")
     roll_length = st.slider("Rollenlänge (m)", *bounds("roll_length_slider"), step=0.5, key="roll_length_slider")
+
+    st.markdown("**🎲 Zufällige Bestellung**")
+    n_types = st.slider("Anzahl Bestelltypen", *bounds("n_types_slider"), key="n_types_slider")
+    seed = st.number_input("Zufalls-Seed", *bounds("seed_input"), step=1, key="seed_input")
+    st.button(
+        "🎲 Zufällige Bestellung generieren", use_container_width=True, on_click=randomize_orders,
+        help="Erzeugt eine neue zufällige Bestelltabelle mit der gewählten Anzahl Bestelltypen "
+             "(würfelt bei jedem Klick einen neuen Seed).",
+    )
+
     st.markdown("**Bestellungen**")
     orders_df = st.data_editor(
         st.session_state.orders_df, num_rows="dynamic", use_container_width=True,
@@ -85,7 +96,7 @@ if not orders:
     st.warning("Mindestens eine gültige Bestellung mit Länge ≤ Rollenlänge wird benötigt.")
     st.stop()
 
-sync_query_params(orders, roll_length)
+sync_query_params(orders, roll_length, n_types, seed)
 
 problem = build_problem(orders, roll_length=roll_length)
 
