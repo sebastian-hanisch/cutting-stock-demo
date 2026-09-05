@@ -176,12 +176,12 @@ tab_cg, tab_ffd = st.tabs(["Column Generation", "FFD-Heuristik"])
 with tab_cg:
     st.plotly_chart(
         pattern_figure(problem, cg_result.patterns, cg_result.stock_idx, cg_result.pattern_counts, "Schnittmuster (Column Generation)"),
-        use_container_width=True,
+        use_container_width=True, key="pattern_cg",
     )
 with tab_ffd:
     st.plotly_chart(
         pattern_figure(problem, ffd_patterns, ffd_stock_idx, ffd_counts, "Schnittmuster (FFD)"),
-        use_container_width=True,
+        use_container_width=True, key="pattern_ffd",
     )
 
 with st.expander("❓ Wie funktioniert diese Demo?"):
