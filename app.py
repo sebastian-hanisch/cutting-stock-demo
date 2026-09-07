@@ -243,7 +243,7 @@ ergänzt; ist keine solche Kombination mehr zu finden, ist die LP-Relaxierung be
 
 **Rundung:** Aus der optimalen fraktionalen Lösung werden die vollen Rollen je (Rollentyp,
 Muster)-Kombination (abgerundet) übernommen; der kleine Rest wird mit FFD aufgefüllt - ein
-Standardverfahren, das garantiert zulässig bleibt, ohne vollständiges Branch-and-Price zu benötigen.
+Standardverfahren, das garantiert zulässig bleibt, ohne vollständiges Branch & Price zu benötigen.
 """
     )
 

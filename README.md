@@ -13,7 +13,7 @@ Verglichen wird das mit **First-Fit-Decreasing (FFD)**, einer schnellen, naiven 
 ## Methodik
 
 - Column Generation: LP-Master-Problem via SciPy `linprog` (HiGHS), Pricing-Teilproblem als unbeschränktes Rucksackproblem pro Rollentyp via exakter dynamischer Programmierung; das über alle Rollentypen wertvollste neue Muster wird je Iteration ergänzt
-- Rundung der fraktionalen LP-Lösung auf eine ganzzahlige Lösung: volle Rollen je (Rollentyp, Muster)-Kombination abgerundet übernehmen, Rest per FFD auffüllen (Standardverfahren, bleibt beweisbar zulässig, ohne vollständiges Branch-and-Price)
+- Rundung der fraktionalen LP-Lösung auf eine ganzzahlige Lösung: volle Rollen je (Rollentyp, Muster)-Kombination abgerundet übernehmen, Rest per FFD auffüllen (Standardverfahren, bleibt beweisbar zulässig, ohne vollständiges Branch & Price)
 - First-Fit-Decreasing als unabhängige Vergleichsheuristik, erweitert um eine "billigster passender Rollentyp"-Regel beim Öffnen neuer Rollen
 - Test gegen ein von Hand nachrechenbares Beispiel (Stocklänge 10, Stücke 6 und 4 mit je 5 Bedarf): die optimale Lösung nutzt ein kombiniertes Muster [1×6, 1×4] mit exakt 0 Verschnitt — dieser Test verifiziert, dass das Pricing-Teilproblem tatsächlich kombinierte Muster findet und nicht nur triviale Ein-Item-Muster (siehe `tests/test_solver.py`)
 - Verschnitt zählt physische Rollenreste **und** durch die Rundung entstandene Überproduktion (Bedarf wird mit ≥ statt = gedeckt), damit die Kennzahl zwischen FFD und Column Generation fair vergleichbar bleibt
