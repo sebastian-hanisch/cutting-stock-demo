@@ -61,7 +61,7 @@ st.caption("🎯 Schnellstart – ein Beispielszenario laden:")
 preset_cols = st.columns(len(PRESETS))
 for col, name in zip(preset_cols, PRESETS):
     with col:
-        st.button(name, use_container_width=True, on_click=apply_preset, args=(name,))
+        st.button(name, width="stretch", on_click=apply_preset, args=(name,))
 
 st.caption(
     "🔗 Die Adresszeile oben spiegelt Ihre aktuelle Konfiguration wider – einfach kopieren, "
@@ -75,7 +75,7 @@ with st.sidebar:
     st.header("⚙️ Einstellungen")
     st.markdown("**Verfügbare Rollentypen**")
     stock_df = st.data_editor(
-        st.session_state.stock_df, num_rows="dynamic", use_container_width=True,
+        st.session_state.stock_df, num_rows="dynamic", width="stretch",
         column_config={
             "Länge (m)": st.column_config.NumberColumn(min_value=0.1, step=0.5),
             "Kosten (€)": st.column_config.NumberColumn(min_value=0.01, step=0.5),
@@ -86,14 +86,14 @@ with st.sidebar:
     n_types = st.slider("Anzahl Bestelltypen", *bounds("n_types_slider"), key="n_types_slider")
     seed = st.number_input("Zufalls-Seed", *bounds("seed_input"), step=1, key="seed_input")
     st.button(
-        "🎲 Zufällige Bestellung generieren", use_container_width=True, on_click=randomize_orders,
+        "🎲 Zufällige Bestellung generieren", width="stretch", on_click=randomize_orders,
         help="Erzeugt eine neue zufällige Bestelltabelle mit der gewählten Anzahl Bestelltypen "
              "(würfelt bei jedem Klick einen neuen Seed).",
     )
 
     st.markdown("**Bestellungen**")
     orders_df = st.data_editor(
-        st.session_state.orders_df, num_rows="dynamic", use_container_width=True,
+        st.session_state.orders_df, num_rows="dynamic", width="stretch",
         column_config={
             "Länge (m)": st.column_config.NumberColumn(min_value=0.1, step=0.1),
             "Bedarf (Stück)": st.column_config.NumberColumn(min_value=1, step=1),
@@ -176,12 +176,12 @@ tab_cg, tab_ffd = st.tabs(["Column Generation", "FFD-Heuristik"])
 with tab_cg:
     st.plotly_chart(
         pattern_figure(problem, cg_result.patterns, cg_result.stock_idx, cg_result.pattern_counts, "Schnittmuster (Column Generation)"),
-        use_container_width=True, key="pattern_cg",
+        width="stretch", key="pattern_cg",
     )
 with tab_ffd:
     st.plotly_chart(
         pattern_figure(problem, ffd_patterns, ffd_stock_idx, ffd_counts, "Schnittmuster (FFD)"),
-        use_container_width=True, key="pattern_ffd",
+        width="stretch", key="pattern_ffd",
     )
 
 with st.expander("❓ Wie funktioniert diese Demo?"):
