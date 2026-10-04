@@ -26,6 +26,7 @@ available stock lengths/costs, compared head to head in the demo:
    pattern and mopping up the small remainder with FFD.
 """
 
+import math
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -62,8 +63,11 @@ def _knapsack_pricing(lengths: np.ndarray, prices: np.ndarray, capacity_length: 
     (e.g. 0.01 = cm precision for meter-scale inputs) so the DP can use
     integer capacities.
     """
-    capacity = int(round(capacity_length / resolution))
-    scaled_lengths = np.maximum(1, np.round(lengths / resolution).astype(int))
+    # Conservative rounding: pieces round UP, the roll length rounds DOWN (1e-6 absorbs float
+    # noise). Plain round() could shorten a piece below its true length, so a pattern that the
+    # DP considers feasible would be a few millimetres too long for the real roll.
+    capacity = int(math.floor(capacity_length / resolution + 1e-6))
+    scaled_lengths = np.maximum(1, np.ceil(lengths / resolution - 1e-6).astype(int))
 
     best_value = np.zeros(capacity + 1)
     best_choice = np.zeros(capacity + 1, dtype=int)  # which item type was last added, -1 = none
@@ -95,10 +99,20 @@ def _knapsack_pricing(lengths: np.ndarray, prices: np.ndarray, capacity_length: 
     return pattern, float(best_value[capacity])
 
 
+def _effective_resolution(problem: CuttingProblem, resolution: float) -> float:
+    """Keep the requested resolution (cm) if every length is a multiple of it; refine to mm
+    otherwise, so inputs with up to three decimals are priced exactly instead of being rounded."""
+    values = np.concatenate([problem.lengths, [s.length for s in problem.stock_types]])
+    if np.all(np.abs(values / resolution - np.round(values / resolution)) < 1e-6):
+        return resolution
+    return min(resolution, 0.001)
+
+
 def column_generation(problem: CuttingProblem, resolution: float = 0.01, max_iterations: int = 200, tol: float = 1e-6) -> ColumnGenerationResult:
     patterns, stock_idx = trivial_patterns(problem)
     costs = np.array([problem.stock_types[k].cost for k in stock_idx])
     log = []
+    resolution = _effective_resolution(problem, resolution)
 
     for iteration in range(max_iterations):
         n_patterns = patterns.shape[0]
