@@ -8,7 +8,7 @@ Interaktive Demo zum Cutting-Stock-Problem mit mehreren Rollentypen: Ein Liefera
 
 Die einzige klassische OR-Technik im Portfolio, die bisher fehlte: **Column Generation**. Statt alle möglichen (Rollentyp, Schnittmuster)-Kombinationen aufzuzählen (schon bei wenigen Bestelltypen praktisch unzählbar viele), startet das Verfahren mit ein paar trivialen Mustern, löst die LP-Relaxierung eines "günstigste Mustermischung"-Modells und nutzt deren Dualwerte, um über je ein kleines Rucksack-Teilproblem pro Rollentyp gezielt genau die eine wertvollste neue Kombination zu finden — bis keine mehr eine Verbesserung bringt.
 
-Verglichen wird das mit **First-Fit-Decreasing (FFD)**, einer schnellen, naiven Greedy-Heuristik, die beim Öffnen einer neuen Rolle immer den billigsten Rollentyp wählt, der für das aktuelle Stück gerade noch reicht — eine rein lokale Entscheidung ohne Blick auf die restliche Bestellung. Kernthema der Demo: Weil Column Generation bei jeder Iteration alle Rollentypen gleichzeitig bewertet, findet es Kombinationen (z. B. "dieser lange, teurere Rollentyp lohnt sich nur, weil er mehrere Bestelltypen exakt kombiniert"), die FFDs "billigste passende Rolle"-Regel systematisch übersieht — im Preset "Worst Case für FFD" ist das ~22 % teurer, und die LP-Schranke beweist, dass Column Generation dort exakt optimal liegt.
+Verglichen wird das mit **First-Fit-Decreasing (FFD)**, einer schnellen, naiven Greedy-Heuristik, die beim Öffnen einer neuen Rolle immer den billigsten Rollentyp wählt, der für das aktuelle Stück gerade noch reicht — eine rein lokale Entscheidung ohne Blick auf die restliche Bestellung. Kernthema der Demo: Weil Column Generation bei jeder Iteration alle Rollentypen gleichzeitig bewertet, findet es Kombinationen (z. B. "dieser lange, teurere Rollentyp lohnt sich nur, weil er mehrere Bestelltypen exakt kombiniert"), die FFDs "billigste passende Rolle"-Regel systematisch übersieht — im Preset "Worst Case für FFD" ist FFD dadurch ~27 % teurer (Column Generation spart ~22 %), und die LP-Schranke beweist, dass Column Generation dort exakt optimal liegt.
 
 ## Methodik
 
@@ -30,4 +30,4 @@ Tests: `pytest tests/ -v`
 
 ---
 
-Teil des [Operations-Research-Demo-Portfolios](https://sebastianhanisch.net/demos.html) von [Sebastian Hanisch](https://sebastianhanisch.net) — Operations Research und Machine Learning. Interesse an einer maßgeschneiderten Lösung? [Kontakt aufnehmen](https://sebastianhanisch.net/kontakt.html).
+Diese Demo ist Teil des Portfolios von [Sebastian Hanisch](https://sebastianhanisch.net) – Operations Research und Machine Learning ([Über mich](https://sebastianhanisch.net/ueber-mich.html)). Mehr zum Thema: [Packen und Zuschnitt optimieren](https://sebastianhanisch.net/packen-zuschnitt-optimierung.html).

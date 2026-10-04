@@ -204,8 +204,8 @@ Stücke später noch dazukommen könnten.
 
 **Column Generation:** Startet mit einer Handvoll einfacher Muster (je ein Muster pro Bestelltyp,
 im jeweils kürzesten passenden Rollentyp) und löst die *LP-Relaxierung* eines Optimierungsmodells,
-das die güntigste Mischung aus (Rollentyp, Muster)-Kombinationen sucht. Die Lösung liefert
-**Dualwerte** - im Grunde einen "Wert pro Meter" für jeden Bestelltyp. Pro Rollentyp sucht ein
+das die günstigste Mischung aus (Rollentyp, Muster)-Kombinationen sucht. Die Lösung liefert
+**Dualwerte** - im Grunde einen "Wert pro Stück" für jeden Bestelltyp. Pro Rollentyp sucht ein
 kleines Rucksack-Teilproblem darauf aufbauend das eine neue Muster, das diese Werte am besten
 ausnutzt; das über alle Rollentypen wertvollste wird ergänzt und die LP erneut gelöst - so lange,
 bis keine (Rollentyp, Muster)-Kombination mehr eine Verbesserung bringt. Weil dabei jede Iteration
@@ -256,6 +256,6 @@ st.markdown("---")
 
 st.caption(
     "Diese Demo ist Teil des Portfolios von [Sebastian Hanisch](https://sebastianhanisch.net) – "
-    "Operations Research und Machine Learning. Interesse an einer maßgeschneiderten Lösung für "
-    "Ihr Unternehmen? [Kontakt aufnehmen](https://sebastianhanisch.net/kontakt.html)"
+    "Operations Research und Machine Learning ([Über mich](https://sebastianhanisch.net/ueber-mich.html)). "
+    "Mehr zum Thema: [Packen und Zuschnitt optimieren](https://sebastianhanisch.net/packen-zuschnitt-optimierung.html)."
 )
