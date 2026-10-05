@@ -18,3 +18,16 @@ def test_app_loads_without_exception():
     at = AppTest.from_file(APP_PATH)
     at.run(timeout=120)
     assert not at.exception, [str(e) for e in at.exception]
+
+
+def test_equal_cost_info_does_not_claim_cg_proves_optimality():
+    """Gleiche Kosten von FFD und Column Generation (A 6,9 m x 13, B 13,1 m x 12; Standard-Rollentypen: beide 176,50 €,
+    LP-Schranke 173,00 €): der Infotext darf nicht behaupten, nur Column Generation beweise, dass nichts günstiger ist,
+    sondern muss die LP-Schranke als untere Grenze nennen und sagen, dass die Lösung darüber liegt."""
+    at = AppTest.from_file(APP_PATH)
+    at.query_params["orders"] = "A:6.9:13,B:13.1:12"
+    at.run(timeout=120)
+    assert not at.exception, [str(e) for e in at.exception]
+    text = " ".join(i.value for i in at.info)
+    assert "dieselben Kosten" in text and "Bewiesen ist nur die LP-Schranke (173.00" in text
+    assert "keine Lösung günstiger sein kann" not in text and "liegt darüber" in text

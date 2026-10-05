@@ -28,7 +28,7 @@ und Visualisierung liegen in eigenen cutting_*.py-Modulen neben dieser Datei.
 import streamlit as st
 
 from cutting_constants import PRESETS
-from cutting_evaluation import summarize
+from cutting_evaluation import equal_cost_note, summarize
 from cutting_model import build_problem
 from cutting_pdf_export import generate_cutting_report_pdf
 from cutting_presets import (
@@ -147,7 +147,8 @@ m3.metric(
 )
 m4.metric(
     "LP-Schranke (Beweis)", f"{cg_result.lp_relaxation_cost:.2f} €",
-    help="Mathematisch bewiesenes Kosten-Minimum, das keine Lösung unterschreiten kann - egal welches Verfahren.",
+    help="Mathematisch bewiesene untere Kostenschranke (LP-Relaxierung): keine ganzzahlige Lösung kann günstiger sein, egal welches "
+         "Verfahren. Die Lösung von Column Generation kann darüber liegen; nur bei Gleichheit ist sie nachweislich optimal.",
 )
 
 if cg_summary.overproduction_length > 1e-6:
@@ -157,12 +158,7 @@ if cg_summary.overproduction_length > 1e-6:
     )
 
 if abs(saved_cost) < 1e-6:
-    st.info(
-        "In diesem Szenario erreicht die einfache FFD-Heuristik zufällig bereits dieselben Kosten wie Column "
-        "Generation. Der Unterschied: Nur Column Generation liefert mit der LP-Schranke auch den **Beweis**, "
-        "dass keine Lösung günstiger sein kann. Probieren Sie ein anderes Szenario oder eigene Bestellungen/"
-        "Rollentypen aus, um einen Fall zu sehen, in dem FFD tatsächlich mehr kostet."
-    )
+    st.info(equal_cost_note(cg_summary.total_cost, cg_result.lp_relaxation_cost))
 
 pdf_bytes = generate_cutting_report_pdf(
     problem, orders, stock_types, ffd_patterns, ffd_stock_idx, ffd_counts, ffd_summary, cg_result, cg_summary,

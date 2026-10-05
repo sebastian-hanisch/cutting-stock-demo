@@ -48,3 +48,22 @@ def summarize(problem: CuttingProblem, patterns: np.ndarray, stock_idx: np.ndarr
         waste_length=waste_length,
         waste_pct=waste_pct,
     )
+
+
+def equal_cost_note(cg_cost: float, lp_cost: float) -> str:
+    """Text für den Fall 'FFD und Column Generation kosten gleich viel'. Bewiesen ist nur die LP-Schranke als untere
+    Grenze für jede ganzzahlige Lösung; erst wenn die Lösungskosten sie erreichen, ist die Lösung nachweislich optimal."""
+    head = "In diesem Szenario erreicht die einfache FFD-Heuristik zufällig bereits dieselben Kosten wie Column Generation. "
+    if cg_cost - lp_cost <= 1e-6:
+        body = (
+            "Die Kosten liegen auf der LP-Schranke, und keine ganzzahlige Lösung kann unter dieser Schranke liegen: "
+            "Beide Lösungen sind damit nachweislich optimal."
+        )
+    else:
+        body = (
+            f"Bewiesen ist nur die LP-Schranke ({lp_cost:.2f} €): Keine ganzzahlige Lösung kann günstiger sein. "
+            f"Die Lösung von Column Generation kostet {cg_cost:.2f} € und liegt darüber; ob eine ganzzahlige Lösung "
+            f"zwischen Schranke und {cg_cost:.2f} € existiert, folgt aus der Schranke allein nicht. "
+        )
+    tail = " Probieren Sie ein anderes Szenario oder eigene Bestellungen/Rollentypen aus, um einen Fall zu sehen, in dem FFD tatsächlich mehr kostet."
+    return head + body.rstrip() + tail
